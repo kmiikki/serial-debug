@@ -1,0 +1,20 @@
+(logger) logger@rpilog01:~/temp $ ./serial-debug -i /dev/ttyLOG
+Interactive mode on /dev/ttyLOG
+Baud: 9600, EOL: crlf, timeout: 2s, lines: 1
+Exit with Ctrl+C or by typing: exit
+
+serial> 1:r
+17:47:26 OUT   5 | 31 3A 72 0D 0A                                  | 1:r␍␊
+17:47:27 IN   11 | 30 31 3A 31 2E 30 30 39 34 36 0D                | 01:1.00946␍
+
+serial> 1:i
+17:47:33 OUT   5 | 31 3A 69 0D 0A                                  | 1:i␍␊
+17:47:34 IN  106 | 30 31 3A 38 58 58 58 2C 31 33 35 36 33 39 38 32 | 01:8XXX,13563982
+                 | 2C 41 2C 35 2C 30 2E 30 30 30 30 30 2C 32 2E 30 | ,A,5,0.00000,2.0
+                 | 30 30 30 30 2C 32 34 2F 30 31 2F 32 30 32 36 2C | 0000,24/01/2026,
+                 | 44 4B 35 31 36 20 56 31 2E 30 30 2E 31 32 2C 20 | DK516·V1.00.12,·
+                 | 30 2E 30 30 2C 59 2C 32 2C 32 2C 31 30 30 2C 2C | 0.00,Y,2,2,100,,
+                 | 35 2C 4E 2C 4E 2C 4E 2C 30 31 2F 30 31 2F 30 31 | 5,N,N,N,01/01/01
+                 | 2C 42 43 37 32 37 46 44 34 0D                   | ,BC727FD4␍
+
+serial> 

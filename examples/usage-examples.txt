@@ -1,0 +1,38 @@
+Usage:
+  serial-debug [options] DEVICE COMMAND
+  serial-debug [options] --interactive DEVICE
+  serial-debug [options] --listen DEVICE
+  serial-debug [options] --sniff DEVICE
+  serial-debug [options] --scan-eol DEVICE COMMAND
+  serial-debug [options] --scan-baud DEVICE COMMAND
+
+Options:
+  -b, --baud BAUD         Baud rate (default: 9600)
+  -e, --eol MODE          EOL mode: cr | lf | crlf | lfcr | none (default: crlf)
+  -t, --timeout SEC       Read timeout in seconds (default: 2)
+  -s, --sleep SEC         Sleep after write before read (default: 0.2)
+  -w, --width BYTES       Bytes per visual row (default: 16)
+  -n, --lines COUNT       Read up to COUNT response lines (default: 1)
+      --trim-cr           Remove trailing carriage return from received lines
+      --hex-only          Show only hex column
+      --ascii-only        Show only visible text column
+      --text              Show extra TEXT rendering
+      --log FILE          Write displayed output also to FILE
+      --append            Append to log file instead of overwriting
+      --ts-ms             Show timestamps with millisecond precision
+      --ts-us             Show timestamps with microsecond precision
+  -i, --interactive       Interactive mode
+  -l, --listen            Listen only, line based
+      --sniff             Raw sniff mode with idle-gap frame splitting
+      --frame-gap SEC     Idle gap that ends a sniff frame (default: 0.20)
+      --show-delay        Show delay from previous sniff frame
+      --sniff-idle SEC    Alias for --frame-gap
+      --sniff-max BYTES   Maximum bytes per sniff frame (default: 4096)
+      --scan-eol          Try common EOL modes with the given COMMAND
+      --scan-baud         Try common baud rates with the given COMMAND
+      --baud-list LIST    Baud list for --scan-baud (comma or space separated)
+  -h, --help              Show this help
+      --version           Show program version
+
+Example:
+  serial-debug /dev/ttyUSB0 S
