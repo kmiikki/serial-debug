@@ -67,6 +67,13 @@ The correct baud rate becomes immediately visible when a response appears.
 
 ## Quick start
 
+Clone the repository:
+
+```bash
+git clone https://github.com/kmiikki/serial-debug.git
+cd serial-debug
+```
+
 Make the script executable:
 
 ```bash

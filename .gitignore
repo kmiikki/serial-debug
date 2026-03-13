@@ -1,0 +1,18 @@
+# editor files
+*~
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# logs
+*.log
+
+# serial-debug output logs
+serial-debug-*.log
+
+# temporary files
+tmp/
+temp/
