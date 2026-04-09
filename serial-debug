@@ -7,7 +7,7 @@
 #
 set -euo pipefail
 
-VERSION="1.0"
+VERSION="1.1"
 AUTHOR="Kim Miikki"
 YEAR="2026"
 
@@ -26,6 +26,7 @@ Options:
   -e, --eol MODE          EOL mode: cr | lf | crlf | lfcr | none (default: crlf)
   -t, --timeout SEC       Read timeout in seconds (default: 2)
   -s, --sleep SEC         Sleep after write before read (default: 0.2)
+  -p, --prefix MODE       Auto-prefix if missing: none | sp | space | tab | bs
   -w, --width BYTES       Bytes per visual row (default: 16)
   -n, --lines COUNT       Read up to COUNT response lines (default: 1)
       --trim-cr           Remove trailing carriage return from received lines
@@ -49,8 +50,17 @@ Options:
   -h, --help              Show this help
       --version           Show program version
 
-Example:
+Examples:
   serial-debug /dev/ttyUSB0 S
+  serial-debug /dev/ttyUSB0 " 1:N,?"
+  serial-debug -p sp /dev/ttyUSB0 "1:N,?"
+  serial-debug --interactive -p sp /dev/ttyUSB0
+
+Notes:
+  In interactive mode with -p/--prefix, the prefix is added only if it is
+  missing. For example, with -p sp:
+    1:N,?   -> sent as " 1:N,?"
+     1:N,?  -> sent unchanged
 USAGE
 }
 
@@ -58,6 +68,7 @@ baud=9600
 eol_mode="crlf"
 read_timeout=2
 post_write_sleep=0.2
+prefix_mode="none"
 interactive=0
 listen_only=0
 sniff_mode=0
@@ -99,6 +110,7 @@ while [[ $# -gt 0 ]]; do
         -e|--eol) eol_mode="$2"; shift 2 ;;
         -t|--timeout) read_timeout="$2"; shift 2 ;;
         -s|--sleep) post_write_sleep="$2"; shift 2 ;;
+        -p|--prefix) prefix_mode="$2"; shift 2 ;;
         -w|--width) bytes_per_line="$2"; shift 2 ;;
         -n|--lines) response_lines="$2"; shift 2 ;;
         --trim-cr) trim_cr=1; shift ;;
@@ -130,6 +142,15 @@ done
 [[ "$bytes_per_line" =~ ^[1-9][0-9]*$ ]] || { echo "Invalid width: $bytes_per_line" >&2; exit 1; }
 [[ "$response_lines" =~ ^[1-9][0-9]*$ ]] || { echo "Invalid lines count: $response_lines" >&2; exit 1; }
 [[ "$sniff_max_bytes" =~ ^[1-9][0-9]*$ ]] || { echo "Invalid sniff max bytes: $sniff_max_bytes" >&2; exit 1; }
+
+case "${prefix_mode,,}" in
+    none|sp|space|tab|bs) ;;
+    *)
+        echo "Invalid prefix mode: $prefix_mode" >&2
+        echo "Allowed values: none, sp, space, tab, bs" >&2
+        exit 1
+        ;;
+ esac
 
 mode_count=$(( interactive + listen_only + sniff_mode + scan_eol_mode + scan_baud_mode ))
 (( mode_count <= 1 )) || { echo "Choose only one of --interactive, --listen, --sniff, --scan-eol, --scan-baud" >&2; exit 1; }
@@ -213,6 +234,34 @@ eol_hex() {
         lfcr) printf '0A 0D' ;;
         none) printf '' ;;
     esac
+}
+
+
+prefix_bytes() {
+    case "${prefix_mode,,}" in
+        none) printf '' ;;
+        sp|space) printf ' ' ;;
+        tab) printf '	' ;;
+        bs) printf '' ;;
+        *) printf '' ;;
+    esac
+}
+
+apply_prefix_if_missing() {
+    local cmd="$1"
+    local prefix
+    prefix="$(prefix_bytes)"
+
+    [[ -z "$prefix" ]] && {
+        printf '%s' "$cmd"
+        return
+    }
+
+    if [[ "$cmd" == "$prefix"* ]]; then
+        printf '%s' "$cmd"
+    else
+        printf '%s%s' "$prefix" "$cmd"
+    fi
 }
 
 hex_from_bytes() {
@@ -484,8 +533,16 @@ drain_input() {
 }
 
 read_one_response() {
-    local line=""
-    IFS= read -r -t "$read_timeout" -d $'\n' line <&3 || true
+    local line
+    local read_delim
+
+    case "$eol_mode" in
+        cr)   read_delim=$'\r' ;;
+        lf)   read_delim=$'\n' ;;
+        *)    read_delim=$'\n' ;;
+    esac
+
+    IFS= read -r -t "$read_timeout" -d "$read_delim" line <&3 || true
     if [[ "$trim_cr" -eq 1 ]]; then
         line="${line%$'\r'}"
     fi
@@ -545,10 +602,11 @@ print_timeout() {
 }
 
 run_command_once() {
-    local cmd="$1" responses
+    local cmd="$1" responses wire_cmd
+    wire_cmd="$(apply_prefix_if_missing "$cmd")"
     drain_input
-    print_out_command "$cmd"
-    write_command "$cmd"
+    print_out_command "$wire_cmd"
+    write_command "$wire_cmd"
     sleep "$post_write_sleep"
 
     responses="$(read_responses "$response_lines")"
@@ -575,7 +633,7 @@ interactive_mode() {
     configure_port
     open_port
     echo "Interactive mode on $device"
-    echo "Baud: $baud, EOL: $eol_mode, timeout: ${read_timeout}s, lines: $response_lines"
+    echo "Baud: $baud, EOL: $eol_mode, timeout: ${read_timeout}s, lines: $response_lines, prefix: ${prefix_mode^^}"
     echo "Exit with Ctrl+C or by typing: exit"
     echo
     trap 'echo; close_port; exit 0' INT TERM
